@@ -57,7 +57,11 @@ Este sistema IoT funciona como asistente de estudio inteligente que:
    - ![image](https://github.com/user-attachments/assets/50ab4993-4220-4ec2-b70c-89e72382ac80)
   
 5. **Diagramas de conexión**:
-   -
+   - ![image](https://github.com/user-attachments/assets/e5d80c49-39d8-49a1-a385-08acc4f308df)
+  
+   - ![image](https://github.com/user-attachments/assets/d5f3d71c-7aab-4dba-9963-b7f0ef23f8a7)
+
+
 
 
 
