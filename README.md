@@ -50,5 +50,15 @@ Este sistema IoT funciona como asistente de estudio inteligente que:
      - Ajustar sensibilidad
      - Desactivar alarmas
      - Consultar datos históricos
+    
+4. **Flujos Node-Red**:
+   - ![image](https://github.com/user-attachments/assets/3905cf11-3c4a-437e-bad3-fff6688fbabc)
+  
+   - ![image](https://github.com/user-attachments/assets/50ab4993-4220-4ec2-b70c-89e72382ac80)
+  
+5. **Diagramas de conexión**:
+   -
+
+
 
 🔹 *Sistema desarrollado para la materia Aplicaciones IoT*
