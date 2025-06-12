@@ -1,0 +1,364 @@
+[
+    {
+        "id": "6b37d8076c2b70d7",
+        "type": "tab",
+        "label": "ESP32 IoT Flow",
+        "disabled": false,
+        "info": "Flujo principal para recibir datos MQTT del ESP32 y almacenarlos en SQLite"
+    },
+    {
+        "id": "bc155432228a3fbb",
+        "type": "mqtt in",
+        "z": "6b37d8076c2b70d7",
+        "name": "Sensor MQTT In",
+        "topic": "sensor/fotointerruptor",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "6e7c1e8d0b420b64",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 140,
+        "wires": [
+            [
+                "b57d4e660e770706"
+            ]
+        ]
+    },
+    {
+        "id": "b4f89e8ae20e5929",
+        "type": "mqtt in",
+        "z": "6b37d8076c2b70d7",
+        "name": "Actuator MQTT In",
+        "topic": "actuador/led",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "6e7c1e8d0b420b64",
+        "nl": false,
+        "rap": true,
+        "rh": 0,
+        "inputs": 0,
+        "x": 140,
+        "y": 240,
+        "wires": [
+            [
+                "aece66e5f827ec77"
+            ]
+        ]
+    },
+    {
+        "id": "b57d4e660e770706",
+        "type": "function",
+        "z": "6b37d8076c2b70d7",
+        "name": "Parse Sensor Data",
+        "func": "try {\n    let sensorData = msg.payload;\n    \n    msg.sensorInfo = {\n        value: sensorData.value,\n        object_detected: sensorData.object_detected,\n        is_optimal: sensorData.is_optimal,\n        timestamp: sensorData.timestamp,\n        led_status: sensorData.led_status\n    };\n    \n    msg.payload = {\n        sensor_value: sensorData.value,\n        object_detected: sensorData.object_detected ? \"Detectado\" : \"No Detectado\",\n        timestamp: new Date(sensorData.timestamp * 1000).toLocaleString(),\n        led_r: sensorData.led_status.r,\n        led_g: sensorData.led_status.g,\n        led_b: sensorData.led_status.b\n    };\n    \n    return msg;\n} catch(e) {\n    node.error(\"Error parsing sensor data: \" + e.message);\n    return null;\n}",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 360,
+        "y": 140,
+        "wires": [
+            [
+                "530f2923c6305286",
+                "878f2ef7ae31f479",
+                "63817650d92c8e8c"
+            ]
+        ]
+    },
+    {
+        "id": "aece66e5f827ec77",
+        "type": "function",
+        "z": "6b37d8076c2b70d7",
+        "name": "Parse Actuator Data",
+        "func": "try {\n    let actuatorData = msg.payload;\n    \n    msg.actuatorInfo = {\n        mode: actuatorData.mode || \"custom\",\n        color: actuatorData.color || {r: 0, g: 0, b: 0},\n        timestamp: Date.now() / 1000\n    };\n    \n    msg.payload = {\n        mode: actuatorData.mode || \"custom\",\n        color_r: actuatorData.color ? actuatorData.color.r : 0,\n        color_g: actuatorData.color ? actuatorData.color.g : 0,\n        color_b: actuatorData.color ? actuatorData.color.b : 0,\n        timestamp: new Date().toLocaleString()\n    };\n    \n    return msg;\n} catch(e) {\n    node.error(\"Error parsing actuator data: \" + e.message);\n    return null;\n}",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 240,
+        "wires": [
+            [
+                "5e2513139c4ad4aa",
+                "35dd114c4fcf03c9"
+            ]
+        ]
+    },
+    {
+        "id": "63817650d92c8e8c",
+        "type": "function",
+        "z": "6b37d8076c2b70d7",
+        "name": "Prepare Sensor Insert",
+        "func": "let sensorValue = JSON.stringify({\n    value: msg.sensorInfo.value,\n    object_detected: msg.sensorInfo.object_detected,\n    is_optimal: msg.sensorInfo.is_optimal,\n    led_status: msg.sensorInfo.led_status\n});\n\nmsg.topic = `INSERT INTO sensors_details(sensor_id, user_id, value) VALUES (7, 1, '${sensorValue}')`;return msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 600,
+        "y": 140,
+        "wires": [
+            [
+                "19deaade6b8c44a4"
+            ]
+        ]
+    },
+    {
+        "id": "35dd114c4fcf03c9",
+        "type": "function",
+        "z": "6b37d8076c2b70d7",
+        "name": "Prepare Actuator Insert",
+        "func": "let actuatorState = JSON.stringify({\n    mode: msg.actuatorInfo.mode,\n    color: msg.actuatorInfo.color\n});\n\nmsg.topic = `INSERT INTO actuator_details(actuator_id, user_id, state) VALUES (1, 1, '${actuatorState}')`;return msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 610,
+        "y": 240,
+        "wires": [
+            [
+                "19deaade6b8c44a4"
+            ]
+        ]
+    },
+    {
+        "id": "19deaade6b8c44a4",
+        "type": "sqlite",
+        "z": "6b37d8076c2b70d7",
+        "mydb": "sqlite_db",
+        "sqlquery": "msg.topic",
+        "sql": "",
+        "name": "SQLite Insert",
+        "x": 850,
+        "y": 190,
+        "wires": [
+            [
+                "10391b957ac6de26"
+            ]
+        ]
+    },
+    {
+        "id": "10391b957ac6de26",
+        "type": "debug",
+        "z": "6b37d8076c2b70d7",
+        "name": "DB Insert Result",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 1040,
+        "y": 190,
+        "wires": []
+    },
+    {
+        "id": "530f2923c6305286",
+        "type": "ui_template",
+        "z": "6b37d8076c2b70d7",
+        "group": "sensor_group",
+        "name": "Sensor Status Card",
+        "order": 1,
+        "width": 6,
+        "height": 4,
+        "format": "<div style=\"padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; color: white; box-shadow: 0 8px 32px rgba(0,0,0,0.1);\">\n    <h2 style=\"margin: 0 0 15px 0; display: flex; align-items: center;\">\n        <i class=\"fa fa-eye\" style=\"margin-right: 10px;\"></i>\n        Fotointerruptor KY-010\n    </h2>\n    <div style=\"display: grid; grid-template-columns: 1fr 1fr; gap: 15px;\">\n        <div style=\"background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; backdrop-filter: blur(10px);\">\n            <div style=\"font-size: 14px; opacity: 0.8;\">Estado</div>\n            <div style=\"font-size: 24px; font-weight: bold; color: {{msg.payload.object_detected === 'Detectado' ? '#4ade80' : '#f87171'}};\">\n                {{msg.payload.object_detected}}\n            </div>\n        </div>\n        <div style=\"background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; backdrop-filter: blur(10px);\">\n            <div style=\"font-size: 14px; opacity: 0.8;\">Valor Digital</div>\n            <div style=\"font-size: 24px; font-weight: bold;\">{{msg.payload.sensor_value}}</div>\n        </div>\n    </div>\n    <div style=\"margin-top: 15px; background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; backdrop-filter: blur(10px);\">\n        <div style=\"font-size: 14px; opacity: 0.8;\">Estado LED Actual</div>\n        <div style=\"display: flex; gap: 10px; margin-top: 5px;\">\n            <span style=\"background: rgba(255,0,0,0.8); padding: 5px 10px; border-radius: 5px; font-size: 12px;\">R: {{msg.payload.led_r}}</span>\n            <span style=\"background: rgba(0,255,0,0.8); padding: 5px 10px; border-radius: 5px; font-size: 12px;\">G: {{msg.payload.led_g}}</span>\n            <span style=\"background: rgba(0,0,255,0.8); padding: 5px 10px; border-radius: 5px; font-size: 12px;\">B: {{msg.payload.led_b}}</span>\n        </div>\n    </div>\n    <div style=\"font-size: 12px; opacity: 0.7; margin-top: 10px;\">Última actualización: {{msg.payload.timestamp}}</div>\n</div>",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "resendOnRefresh": false,
+        "templateScope": "local",
+        "className": "",
+        "x": 600,
+        "y": 80,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "878f2ef7ae31f479",
+        "type": "ui_chart",
+        "z": "6b37d8076c2b70d7",
+        "name": "Sensor History",
+        "group": "sensor_group",
+        "order": 2,
+        "width": 6,
+        "height": 4,
+        "label": "Detección de Objetos",
+        "chartType": "line",
+        "legend": "true",
+        "xformat": "HH:mm:ss",
+        "interpolate": "linear",
+        "nodata": "Sin datos",
+        "dot": false,
+        "ymin": "-0.5",
+        "ymax": "1.5",
+        "removeOlder": 1,
+        "removeOlderPoints": "",
+        "removeOlderUnit": "3600",
+        "cutout": 0,
+        "useOneColor": false,
+        "useUTC": false,
+        "colors": [
+            "#1f77b4",
+            "#aec7e8",
+            "#ff7f0e",
+            "#2ca02c",
+            "#98df8a",
+            "#d62728",
+            "#ff9896",
+            "#9467bd",
+            "#c5b0d5"
+        ],
+        "outputs": 1,
+        "useDifferentColor": false,
+        "className": "",
+        "x": 590,
+        "y": 200,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "5e2513139c4ad4aa",
+        "type": "ui_template",
+        "z": "6b37d8076c2b70d7",
+        "group": "actuator_group",
+        "name": "LED Control Card",
+        "order": 1,
+        "width": 6,
+        "height": 4,
+        "format": "<div style=\"padding: 20px; background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); border-radius: 15px; color: white; box-shadow: 0 8px 32px rgba(0,0,0,0.1);\">\n    <h2 style=\"margin: 0 0 15px 0; display: flex; align-items: center;\">\n        <i class=\"fa fa-lightbulb-o\" style=\"margin-right: 10px;\"></i>\n        LED RGB KY-034\n    </h2>\n    <div style=\"background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; backdrop-filter: blur(10px); margin-bottom: 15px;\">\n        <div style=\"font-size: 14px; opacity: 0.8;\">Modo Actual</div>\n        <div style=\"font-size: 20px; font-weight: bold; text-transform: capitalize;\">{{msg.payload.mode}}</div>\n    </div>\n    <div style=\"background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px; backdrop-filter: blur(10px);\">\n        <div style=\"font-size: 14px; opacity: 0.8; margin-bottom: 10px;\">Color RGB</div>\n        <div style=\"display: flex; justify-content: space-between; align-items: center;\">\n            <div style=\"display: flex; gap: 10px;\">\n                <div style=\"text-align: center;\">\n                    <div style=\"width: 30px; height: 30px; background: rgb({{msg.payload.color_r}},0,0); border-radius: 50%; margin: 0 auto 5px;\"></div>\n                    <div style=\"font-size: 12px;\">R: {{msg.payload.color_r}}</div>\n                </div>\n                <div style=\"text-align: center;\">\n                    <div style=\"width: 30px; height: 30px; background: rgb(0,{{msg.payload.color_g}},0); border-radius: 50%; margin: 0 auto 5px;\"></div>\n                    <div style=\"font-size: 12px;\">G: {{msg.payload.color_g}}</div>\n                </div>\n                <div style=\"text-align: center;\">\n                    <div style=\"width: 30px; height: 30px; background: rgb(0,0,{{msg.payload.color_b}}); border-radius: 50%; margin: 0 auto 5px;\"></div>\n                    <div style=\"font-size: 12px;\">B: {{msg.payload.color_b}}</div>\n                </div>\n            </div>\n            <div style=\"width: 50px; height: 50px; background: rgb({{msg.payload.color_r}},{{msg.payload.color_g}},{{msg.payload.color_b}}); border-radius: 50%; border: 3px solid white; box-shadow: 0 4px 15px rgba(0,0,0,0.2);\"></div>\n        </div>\n    </div>\n    <div style=\"font-size: 12px; opacity: 0.7; margin-top: 15px;\">Última actualización: {{msg.payload.timestamp}}</div>\n</div>",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "resendOnRefresh": false,
+        "templateScope": "local",
+        "className": "",
+        "x": 600,
+        "y": 300,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "8b421c8e924f7e30",
+        "type": "ui_template",
+        "z": "6b37d8076c2b70d7",
+        "group": "28e9fdb161f25a29",
+        "name": "LED Control Panel",
+        "order": 1,
+        "width": 12,
+        "height": 6,
+        "format": "<div style=\"padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 15px; color: white;\">\n    <h2 style=\"margin: 0 0 20px 0;\">Control Manual del LED</h2>\n    <div style=\"display: grid; grid-template-columns: 1fr 1fr; gap: 20px;\">\n        <div style=\"background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px;\">\n            <h3 style=\"margin: 0 0 15px 0;\">Modos Predefinidos</h3>\n            <button ng-click=\"send({payload:{mode:'concentracion'}})\" style=\"width: 100%; margin: 5px 0; padding: 10px; background: #4ade80; border: none; border-radius: 5px; color: white; cursor: pointer;\">Concentración</button>\n            <button ng-click=\"send({payload:{mode:'descanso'}})\" style=\"width: 100%; margin: 5px 0; padding: 10px; background: #3b82f6; border: none; border-radius: 5px; color: white; cursor: pointer;\">Descanso</button>\n            <button ng-click=\"send({payload:{mode:'alerta'}})\" style=\"width: 100%; margin: 5px 0; padding: 10px; background: #ef4444; border: none; border-radius: 5px; color: white; cursor: pointer;\">Alerta</button>\n            <button ng-click=\"send({payload:{mode:'apagado'}})\" style=\"width: 100%; margin: 5px 0; padding: 10px; background: #6b7280; border: none; border-radius: 5px; color: white; cursor: pointer;\">Apagar</button>\n        </div>\n        <div style=\"background: rgba(255,255,255,0.1); padding: 15px; border-radius: 10px;\">\n            <h3 style=\"margin: 0 0 15px 0;\">Control RGB Personalizado</h3>\n            <div style=\"margin: 10px 0;\">\n                <label>Rojo (0-255):</label>\n                <input type=\"range\" id=\"red\" ng-model=\"redVal\" min=\"0\" max=\"255\" ng-change=\"updatePreview()\" style=\"width: 100%; margin: 5px 0;\">\n                <span>{{redVal}}</span>\n            </div>\n            <div style=\"margin: 10px 0;\">\n                <label>Verde (0-255):</label>\n                <input type=\"range\" id=\"green\" ng-model=\"greenVal\" min=\"0\" max=\"255\" ng-change=\"updatePreview()\" style=\"width: 100%; margin: 5px 0;\">\n                <span>{{greenVal}}</span>\n            </div>\n            <div style=\"margin: 10px 0;\">\n                <label>Azul (0-255):</label>\n                <input type=\"range\" id=\"blue\" ng-model=\"blueVal\" min=\"0\" max=\"255\" ng-change=\"updatePreview()\" style=\"width: 100%; margin: 5px 0;\">\n                <span>{{blueVal}}</span>\n            </div>\n            <div style=\"text-align: center; margin: 15px 0;\">\n                <div id=\"colorPreview\" style=\"width: 60px; height: 60px; border-radius: 50%; border: 3px solid white; background: rgb(0,0,0); margin: auto;\"></div>\n            </div>\n            <button ng-click=\"send({payload:{color:{r:redVal,g:greenVal,b:blueVal}}})\" style=\"width: 100%; padding: 10px; background: #8b5cf6; border: none; border-radius: 5px; color: white; cursor: pointer;\">Aplicar Color</button>\n        </div>\n    </div>\n</div>\n\n<script>\n$scope.redVal = 0;\n$scope.greenVal = 0;\n$scope.blueVal = 0;\n\n$scope.updatePreview = function() {\n    const r = $scope.redVal;\n    const g = $scope.greenVal;\n    const b = $scope.blueVal;\n    document.getElementById('colorPreview').style.background = `rgb(${r}, ${g}, ${b})`;\n};\n</script>\n",
+        "storeOutMessages": true,
+        "fwdInMessages": true,
+        "resendOnRefresh": false,
+        "templateScope": "local",
+        "className": "",
+        "x": 150,
+        "y": 360,
+        "wires": [
+            [
+                "59eb06dce99fd21d"
+            ]
+        ]
+    },
+    {
+        "id": "59eb06dce99fd21d",
+        "type": "mqtt out",
+        "z": "6b37d8076c2b70d7",
+        "name": "LED Control MQTT Out",
+        "topic": "actuador/led",
+        "qos": "",
+        "retain": "",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "6e7c1e8d0b420b64",
+        "x": 410,
+        "y": 360,
+        "wires": []
+    },
+    {
+        "id": "6e7c1e8d0b420b64",
+        "type": "mqtt-broker",
+        "name": "EMQX Broker",
+        "broker": "broker.emqx.io",
+        "port": "1883",
+        "clientid": "",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "sqlite_db",
+        "type": "sqlitedb",
+        "db": "C:\\Users\\vanes\\aiot01.db",
+        "mode": "RWC"
+    },
+    {
+        "id": "sensor_group",
+        "type": "ui_group",
+        "name": "Sensores",
+        "tab": "",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "actuator_group",
+        "type": "ui_group",
+        "name": "LED RGB",
+        "tab": "",
+        "order": 2,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "28e9fdb161f25a29",
+        "type": "ui_group",
+        "name": "Control Manual",
+        "tab": "cf4c39321a1d2a07",
+        "order": 3,
+        "disp": true,
+        "width": "12",
+        "collapse": false,
+        "className": ""
+    },
+    {
+        "id": "cf4c39321a1d2a07",
+        "type": "ui_tab",
+        "name": "IoT Dashboard ESP32",
+        "icon": "dashboard",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    }
+]
