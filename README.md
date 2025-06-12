@@ -30,10 +30,10 @@ Este sistema IoT funciona como asistente de estudio inteligente que:
   - Manejo de componentes
     
 - **MQTT**: Programa
--Comunicación entre los ESP32
+  -Comunicación entre los ESP32
 
 - **Thonny**: Aplicación
-- Programación de los componentes
+  - Programación de los componentes
 
 ## ⚙️ Aplicaciones prácticas
 1. **Tutor inteligente**: 
