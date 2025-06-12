@@ -19,7 +19,7 @@ Este sistema IoT funciona como asistente de estudio inteligente que:
 
 
 ## 🛠 Software
-- **PostgreSQL**: Guarda registros de:
+- **SQLite**: Guarda registros de:
   - Id del usuario
   - Id del sensor o actuador
   - Fecha
