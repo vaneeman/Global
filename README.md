@@ -69,4 +69,4 @@ Este sistema IoT funciona como asistente de estudio inteligente que:
 
 
 
-🔹 *Sistema desarrollado para la materia Aplicaciones IoT*
+🔹 *Sistema desarrollado para la materia Aplicaciones IoT por Vanesa Monserrat Medrano Hernández GDS0651*
